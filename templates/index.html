@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Photo Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 1em;
+            position: fixed;
+            top: 0;
+            left: 0;
+        }
+        ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        li {
+            position: relative;
+            overflow: hidden;
+        }
+        img {
+            max-width: 100%;
+            vertical-align: middle;
+        }
+        @media (max-width: 600px) {
+            img {
+                max-width: 100%;
+            }
+        }
+        .selected .picked-label {
+            display: block;
+        }
+        .picked-label {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: rgba(0,0,0,0.5);
+            color: white;
+            padding: 8px;
+        }
+        main {
+            display: flex;
+            margin-top: 60px; /* 給 header 留出空間 */
+        }
+        .left-panel, .right-panel {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+    </style>
+    <script>
+        function shuffleImages() {
+            const ul = document.querySelector('ul');
+            const liArray = Array.from(ul.querySelectorAll('li'));
+
+            liArray.sort(() => Math.random() - 0.5);
+
+            while (ul.firstChild) {
+                ul.removeChild(ul.firstChild);
+            }
+
+            liArray.forEach(li => {
+                ul.appendChild(li);
+            });
+        }
+        async function batchMoveImages() {
+            const selectedElements = Array.from(document.querySelectorAll('.selected'));
+            const selectedFilenames = selectedElements.map(li => li.querySelector('img').dataset.filename);
+            console.log("Selected filenames: ", selectedFilenames);
+            const response = await fetch('/move_images', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filenames: selectedFilenames })
+            });
+
+            const result = await response.json();
+            console.log(result.message);
+
+            // 如果成功，從 DOM 中移除這些選定的元素
+            if (result.message === 'Images moved successfully') {
+                selectedElements.forEach(element => element.remove());
+            }
+        }
+        function toggleSelected(event) {
+            const li = event.currentTarget;
+            li.classList.toggle('selected');
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <button onclick="shuffleImages()">Shuffle</button>
+        <button onclick="batchMoveImages()">Move</button>
+    </header>
+    <main>
+        <ul>
+            {% for image in images %}
+            <li onclick="toggleSelected(event)">
+                <img src="{{ url_for('send_image', filename=image) }}" alt="{{ image }}" data-filename="{{ image }}">
+                <div class="picked-label">Picked</div>
+            </li>
+            {% endfor %}
+        </ul>
+    </main>
+</body>
+</html>
