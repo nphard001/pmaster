@@ -4,6 +4,7 @@ A quick image picker powered by ChatGPT
 
 from flask import Flask, render_template, send_from_directory, request, jsonify
 import os
+import json
 import shutil
 from loguru import logger
 
@@ -11,12 +12,26 @@ app = Flask(__name__)
 image_folder = r"C:\dat\sdgen\XL01\0922face\ptest"
 target_folder = r"C:\dat\sdgen\XL01\0922face"
 
+# testing data
+st = [{"a":5, "b":6}, {"x":-1, "y":0, "z":3.14}]
+raw = r"""
+.PHONY: gin
+gin:
+	@if [ ! -d "/active/codrive" ]; then \
+		echo "Error: /active/codrive does not exist. NFS not mounted."; \
+		exit 1; \
+	fi
+    """.strip()
+uberlong = ("yolo"*1000)
+
 @app.route('/')
 def index():
-    images = [f for f in os.listdir(image_folder) if f.lower().endswith(('png', 'jpg', 'jpeg'))]
-    images.sort()
-
-    return render_template('index.html', images=images, folder=image_folder)
+    idata = [f for f in os.listdir(image_folder) if f.lower().endswith(('png', 'jpg', 'jpeg'))]
+    idata = [
+        {"filename": f, "info": f"{f}\n{uberlong}\nsome_extra_info1\nsome_extra_info2\nsome_extra_info3\n{json.dumps(st, indent=1)}\n{raw}"}
+        for f in os.listdir(image_folder) if f.lower().endswith(('png', 'jpg', 'jpeg'))
+    ]
+    return render_template('index.html', idata=idata, folder=image_folder)
 
 @app.route('/image/<path:filename>')
 def send_image(filename):

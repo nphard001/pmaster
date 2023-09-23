@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <title>Photo Viewer</title>
     <style>
+        @import url(https://fonts.googleapis.com/earlyaccess/notosanstc.css);
+        div {
+            font-family: 'Noto Sans TC', sans-serif;
+        }
         body {
             margin: 0;
             padding: 0;
@@ -25,7 +29,7 @@
             padding: 0;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
+            gap: 4px;
         }
         li {
             position: relative;
@@ -63,9 +67,11 @@
         }
         .left-panel {
             flex-grow: 2;  /* 指定一个权重，使其起初占据更多空间 */
+            background-color: rgb(215, 196, 200);
         }
         .right-panel {
             flex-grow: 1;
+            background-color: rgb(234, 218, 233);
         }
         .resizer {
             flex-grow: 0;
@@ -73,7 +79,7 @@
             flex-basis: 10px;
             cursor: ew-resize;
             height: 100%;
-            background-color: #ccc;
+            background-color: rgb(109, 107, 135);
         }
         .alt-label {
             position: absolute;
@@ -83,6 +89,9 @@
             color: white;
             padding: 5px;
             z-index: 1000;
+            white-space: pre-wrap;
+            max-width: 40vw;
+            overflow-wrap: break-word;
         }
 
 
@@ -131,7 +140,7 @@
         function showPreview(imageUrl, altText) {
             const previewArea = document.querySelector('.right-panel');
             previewArea.innerHTML = `
-                <div class="alt-label">${altText}</div>
+                <code class="alt-label">${altText}</code>
                 <img src="${imageUrl}" style="width: 100%;">
             `;
         }
@@ -181,9 +190,9 @@
         </span>
         <div class="left-panel">
             <ul>
-                {% for image in images %}
+                {% for item in idata %}
                 <li onclick="toggleSelected(event)">
-                    <img src="{{ url_for('send_image', filename=image) }}" alt="{{ image }}" data-filename="{{ image }}" onmouseover="showPreview(this.src, this.alt)">
+                    <img src="{{ url_for('send_image', filename=item.filename) }}" alt="{{ item.info }}" data-filename="{{ item.filename }}" onmouseover="showPreview(this.src, this.alt)">
                     <div class="picked-label">Picked</div>
                 </li>
                 {% endfor %}
@@ -191,7 +200,7 @@
         </div>
         <div class="resizer"></div>
         <div class="right-panel">
-            <!-- 這裡是圖片預覽區 -->
+            <!-- preview -->
         </div>
     </main>
 </body>
