@@ -8,14 +8,16 @@
             margin: 0;
             padding: 0;
         }
-        header {
+        .menu {
             background-color: #333;
             color: white;
             text-align: center;
-            padding: 1em;
+            padding: 5px;
             position: fixed;
             top: 0;
             left: 0;
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.5); /* 半透明白色背景 */
         }
         ul {
             list-style: none;
@@ -52,12 +54,37 @@
         }
         main {
             display: flex;
-            margin-top: 60px; /* 給 header 留出空間 */
+            height: 100vh;
         }
         .left-panel, .right-panel {
-            flex: 1;
+            flex-grow: 1;
+            flex-basis: 0;
             overflow-y: auto;
         }
+        .left-panel {
+            flex-grow: 2;  /* 指定一个权重，使其起初占据更多空间 */
+        }
+        .right-panel {
+            flex-grow: 1;
+        }
+        .resizer {
+            flex-grow: 0;
+            flex-shrink: 0;
+            flex-basis: 10px;
+            cursor: ew-resize;
+            height: 100%;
+            background-color: #ccc;
+        }
+        .alt-label {
+            position: absolute;
+            left: 0px;
+            bottom: 0px;
+            background-color: rgba(0,0,0,0.5);
+            color: white;
+            padding: 5px;
+            z-index: 1000;
+        }
+
 
     </style>
     <script>
@@ -97,22 +124,75 @@
             const li = event.currentTarget;
             li.classList.toggle('selected');
         }
+        // function showPreview(imageUrl) {
+        //     const previewArea = document.querySelector('.right-panel');
+        //     previewArea.innerHTML = `<img src="${imageUrl}" style="width: 100%;">`;
+        // }
+        function showPreview(imageUrl, altText) {
+            const previewArea = document.querySelector('.right-panel');
+            previewArea.innerHTML = `
+                <div class="alt-label">${altText}</div>
+                <img src="${imageUrl}" style="width: 100%;">
+            `;
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const resizer = document.querySelector('.resizer');
+            const leftPanel = document.querySelector('.left-panel');
+            const rightPanel = document.querySelector('.right-panel');
+            const main = document.querySelector('main');
+            let isResizing = false;
+
+            resizer.addEventListener('mousedown', (event) => {
+                isResizing = true;
+                const mainRect = main.getBoundingClientRect();
+                const totalWidth = mainRect.width;
+                
+                function handleMouseMove(event) {
+                    const leftWidth = event.clientX - mainRect.left;
+                    const rightWidth = totalWidth - leftWidth;
+
+                    const leftFlexGrow = leftWidth / totalWidth;
+                    const rightFlexGrow = rightWidth / totalWidth;
+
+                    leftPanel.style.flexGrow = leftFlexGrow;
+                    rightPanel.style.flexGrow = rightFlexGrow;
+                }
+
+                document.addEventListener('mousemove', handleMouseMove);
+                
+                document.addEventListener('mouseup', () => {
+                    isResizing = false;
+                    document.removeEventListener('mousemove', handleMouseMove);
+                }, { once: true });
+            });
+        });
+
+
+
     </script>
 </head>
 <body>
-    <header>
-        <button onclick="shuffleImages()">Shuffle</button>
-        <button onclick="batchMoveImages()">Move</button>
-    </header>
     <main>
-        <ul>
-            {% for image in images %}
-            <li onclick="toggleSelected(event)">
-                <img src="{{ url_for('send_image', filename=image) }}" alt="{{ image }}" data-filename="{{ image }}">
-                <div class="picked-label">Picked</div>
-            </li>
-            {% endfor %}
-        </ul>
+        <span class="menu">
+            <button onclick="shuffleImages()">Shuffle</button>
+            <button onclick="batchMoveImages()">Move</button>
+        </span>
+        <div class="left-panel">
+            <ul>
+                {% for image in images %}
+                <li onclick="toggleSelected(event)">
+                    <img src="{{ url_for('send_image', filename=image) }}" alt="{{ image }}" data-filename="{{ image }}" onmouseover="showPreview(this.src, this.alt)">
+                    <div class="picked-label">Picked</div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="resizer"></div>
+        <div class="right-panel">
+            <!-- 這裡是圖片預覽區 -->
+        </div>
     </main>
 </body>
 </html>
