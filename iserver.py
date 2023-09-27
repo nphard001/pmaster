@@ -10,18 +10,31 @@ from loguru import logger
 from pmaster.core.img import *
 
 app = Flask(__name__)
-image_folder = r"C:\dat\sdgen\XL01\0922face\ptest"
-target_folder = r"C:\dat\sdgen\XL01\0922face"
+image_folder = r"C:\dat\sdgen\XL01\simpleBG\rawUpperExt\part2"
+target_folder = r"C:\dat\sdgen\XL01\simpleBG"
 
 
 @app.route('/')
 def index():
-    def pick_pstring(s0):
+    def get_info(f, fast=False):
+        if fast:
+            return f"{f}"
+        s0 = read_pstring(os.path.join(image_folder, f))
         data = parse_pstring(s0)
-        return data['pos']
+        p1 = data['pos'].strip().replace(", ", ",")
+        p1 = ",".join([part.strip() for part in p1.split(',')])
+        p1 = p1.replace(",", ", ")
+        outputs = [
+            f"<Positive> {p1}",
+            f"<File> {f}"
+        ]
+        if data['score'] > 0:
+            outputs.append(f"<Score> {data['score']}")
+        return "\n".join(outputs)
+    fast_flag = False # turn-on if too many files
     idata = [
         {"filename": f,
-         "info": f"{pick_pstring(read_pstring(os.path.join(image_folder, f)))}\n{f}"}
+         "info": f"{get_info(f, fast=fast_flag)}"}
         for f in os.listdir(image_folder) if f.lower().endswith(('png', 'jpg', 'jpeg'))
     ]
     return render_template('index.html', idata=idata, folder=image_folder)

@@ -24,11 +24,26 @@ def read_pstring_jpg(abspath: str):
     return exif_comment
 
 def parse_pstring(raw: str):
-    data = {'raw': raw}
-    p1, p2 = raw.split("Negative prompt: ")
-    data['pos'] = p1.replace('\n', '')
-    p2, p3 = p2.split("Steps: ")
-    data['neg'] = p2
-    p3 = f"Steps: {p3}"
-    data['model'] = p3
+    data = {
+        'raw': raw,
+        'pos': '',
+        'neg': '',
+        'model': '',
+        'score': 0,
+    }
+    try:
+        p1, p2 = raw.split("Negative prompt: ")
+        data['pos'] = p1.replace('\n', '')
+        p2, p3 = p2.split("Steps: ")
+        data['neg'] = p2
+        p3 = f"Steps: {p3}"
+        data['model'] = p3
+        if 'Score: ' in p3:
+            s0 = p3.split('Score: ')[-1].split(",")[0].strip()
+            try:
+                data['score'] = float(s0)
+            except ValueError:
+                pass
+    except ValueError:
+        pass
     return data
