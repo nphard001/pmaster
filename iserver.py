@@ -10,15 +10,17 @@ from loguru import logger
 from pmaster.core.img import *
 
 app = Flask(__name__)
-image_folder = r"C:\dat\sdgen\XL01\simpleBG\rawUpperExt\part2"
-target_folder = r"C:\dat\sdgen\XL01\simpleBG"
+root_folder = r"C:\dat\sdgen\XL01"
+target_folder = root_folder
 
+@app.route('/', defaults={'subdir': ''})
+@app.route('/<path:subdir>')
+def index(subdir):
+    image_folder = os.path.join(root_folder, subdir)
 
-@app.route('/')
-def index():
     def get_info(f, fast=False):
         if fast:
-            return f"{f}"
+            return f"{f}", f"{f}"
         s0 = read_pstring(os.path.join(image_folder, f))
         data = parse_pstring(s0)
         p1 = data['pos'].strip().replace(", ", ",")
@@ -30,26 +32,32 @@ def index():
         ]
         if data['score'] > 0:
             outputs.append(f"<Score> {data['score']}")
-        return "\n".join(outputs)
-    fast_flag = False # turn-on if too many files
+        return "\n".join(outputs[1:]), "\n".join(outputs)
+
     idata = [
-        {"filename": f,
-         "info": f"{get_info(f, fast=fast_flag)}"}
+        {"filename": f}
         for f in os.listdir(image_folder) if f.lower().endswith(('png', 'jpg', 'jpeg'))
     ]
-    return render_template('index.html', idata=idata, folder=image_folder)
 
+    for table in idata:
+        info1, info2 = get_info(table["filename"], fast=False)
+        table["info1"] = info1
+        table["info2"] = info2
+    return render_template('index.html', idata=idata, folder=image_folder, subdir=subdir)
 
-@app.route('/image/<path:filename>')
-def send_image(filename):
-    return send_from_directory(image_folder, filename)
+@app.route('/image/<path:subdir>/<filename>')
+def send_image(subdir, filename):
+    send_from_dir = os.path.join(root_folder, subdir)
+    return send_from_directory(send_from_dir, filename)
 
 @app.route('/move_images', methods=['POST'])
 def move_images():
-    data = request.json  # 從 request 對象中獲取 JSON 數據
-    selected_filenames = data.get('filenames', [])  # 使用正確的方式獲取 'filenames'
+    data = request.json
+    selected_filenames = data.get('filenames', [])
+    current_subdir = data.get('subdir', '')
+
     for filename in selected_filenames:
-        src_path = os.path.join(image_folder, filename)
+        src_path = os.path.join(root_folder, current_subdir, filename)
         dst_path = os.path.join(target_folder, filename)
         logger.info(f"<moving>\n{src_path}\n{dst_path}")
         shutil.move(src_path, dst_path)

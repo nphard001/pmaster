@@ -67,11 +67,11 @@
         }
         .left-panel {
             flex-grow: 2;  /* 指定一个权重，使其起初占据更多空间 */
-            background-color: rgb(215, 196, 200);
+            background-color: #9FD0F4;
         }
         .right-panel {
             flex-grow: 1;
-            background-color: rgb(234, 218, 233);
+            background-color: #00487C;
         }
         .resizer {
             flex-grow: 0;
@@ -87,10 +87,21 @@
             bottom: 0px;
             background-color: rgba(0,0,0,0.5);
             color: white;
-            padding: 5px;
+            padding: 4px;
             z-index: 1000;
             white-space: pre-wrap;
             max-width: 33vw;
+            overflow-wrap: break-word;
+            font-size: large;
+        }
+        .image-container {
+            background-color: #9fe4f4;
+            padding: 4px;
+        }
+        .text-container {
+            color: white;
+            padding: 4px;
+            white-space: pre-wrap;
             overflow-wrap: break-word;
             font-size: large;
         }
@@ -113,13 +124,19 @@
             });
         }
         async function batchMoveImages() {
+            // Get the subdir from the current URL.
+            const url = new URL(window.location.href);
+            const subdir = url.pathname.substring(1);  // Remove the leading '/'
+
             const selectedElements = Array.from(document.querySelectorAll('.selected'));
             const selectedFilenames = selectedElements.map(li => li.querySelector('img').dataset.filename);
+
             console.log("Selected filenames: ", selectedFilenames);
+
             const response = await fetch('/move_images', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filenames: selectedFilenames })
+                body: JSON.stringify({ filenames: selectedFilenames, subdir: subdir })
             });
 
             const result = await response.json();
@@ -134,17 +151,28 @@
             const li = event.currentTarget;
             li.classList.toggle('selected');
         }
-        // function showPreview(imageUrl) {
-        //     const previewArea = document.querySelector('.right-panel');
-        //     previewArea.innerHTML = `<img src="${imageUrl}" style="width: 100%;">`;
-        // }
-        function showPreview(imageUrl, altText) {
-            const previewArea = document.querySelector('.right-panel');
-            previewArea.innerHTML = `
-                <code class="alt-label">${altText}</code>
-                <img src="${imageUrl}" style="width: 100%;">
-            `;
+        function showPreview(imageUrl, info1, info2) {
+            const imageContainer = document.querySelector('.image-container');
+            const textContainer = document.querySelector('.text-container');
+            
+            // 設定圖片
+            const imgElement = document.createElement('img');
+            imgElement.src = imageUrl;
+            imgElement.style.width = '100%';
+            imageContainer.innerHTML = ''; // 清除先前的內容
+            imageContainer.appendChild(imgElement);
+            
+            // 設定 alt-label
+            const altLabelElement = document.createElement('code');
+            altLabelElement.className = 'alt-label';
+            altLabelElement.innerText = info1;
+            imageContainer.appendChild(altLabelElement);  // 可以調整這行，讓 alt-label 出現在你希望的位置
+            
+            // 設定長文字說明
+            textContainer.innerText = info2;
         }
+
+
 
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -193,7 +221,7 @@
             <ul>
                 {% for item in idata %}
                 <li onclick="toggleSelected(event)">
-                    <img src="{{ url_for('send_image', filename=item.filename) }}" alt="{{ item.info }}" data-filename="{{ item.filename }}" onmouseover="showPreview(this.src, this.alt)">
+                    <img src="{{ url_for('send_image', subdir=subdir, filename=item.filename) }}" alt="{{ item.info1 }}" data-filename="{{ item.filename }}" data-info="{{ item.info2 }}" onmouseover="showPreview(this.src, this.alt, this.getAttribute('data-info'))">
                     <div class="picked-label">Picked</div>
                 </li>
                 {% endfor %}
@@ -201,8 +229,14 @@
         </div>
         <div class="resizer"></div>
         <div class="right-panel">
-            <!-- preview -->
+            <div class="image-container">
+                <!-- 圖片會放在這裡 -->
+            </div>
+            <code class="text-container">
+                <!-- 文字說明會放在這裡 -->
+            </code>
         </div>
+        
     </main>
 </body>
 </html>
